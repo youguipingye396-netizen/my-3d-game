@@ -1629,48 +1629,43 @@ function getBlockHeight(
 // COLLISION
 // ============================================================
 
-function collidesAt(
-    position
-) {
+function collidesAt(position) {
+
+    const radius = playerRadius;
+
+    const bottom =
+        position.y + 0.05;
+
+    const top =
+        position.y +
+        playerHeight -
+        0.05;
+
 
     const minX =
         Math.floor(
-            position.x -
-            playerRadius
+            position.x - radius
         );
-
 
     const maxX =
         Math.floor(
-            position.x +
-            playerRadius
+            position.x + radius
         );
-
 
     const minY =
-        Math.floor(
-            position.y
-        );
-
+        Math.floor(bottom);
 
     const maxY =
-        Math.floor(
-            position.y +
-            playerHeight
-        );
-
+        Math.floor(top);
 
     const minZ =
         Math.floor(
-            position.z -
-            playerRadius
+            position.z - radius
         );
-
 
     const maxZ =
         Math.floor(
-            position.z +
-            playerRadius
+            position.z + radius
         );
 
 
@@ -1692,14 +1687,56 @@ function collidesAt(
                 z++
             ) {
 
-                if (
-                    blocks.has(
+                const block =
+                    blocks.get(
                         blockKey(
                             x,
                             y,
                             z
                         )
-                    )
+                    );
+
+
+                if (!block) {
+                    continue;
+                }
+
+
+                // ブロックの範囲
+                const blockMinX = x - 0.5;
+                const blockMaxX = x + 0.5;
+
+                const blockMinY = y - 0.5;
+                const blockMaxY = y + 0.5;
+
+                const blockMinZ = z - 0.5;
+                const blockMaxZ = z + 0.5;
+
+
+                // プレイヤーとブロックが重なっているか
+                const overlapX =
+                    position.x + radius >
+                    blockMinX &&
+                    position.x - radius <
+                    blockMaxX;
+
+                const overlapY =
+                    top >
+                    blockMinY &&
+                    bottom <
+                    blockMaxY;
+
+                const overlapZ =
+                    position.z + radius >
+                    blockMinZ &&
+                    position.z - radius <
+                    blockMaxZ;
+
+
+                if (
+                    overlapX &&
+                    overlapY &&
+                    overlapZ
                 ) {
 
                     return true;
@@ -1727,67 +1764,53 @@ const stepHeight =
     1.0;
 
 
-function movePlayer(
-    direction,
-    distance
-) {
+function movePlayer(direction, distance) {
 
-    const horizontal =
+    const move =
         direction
             .clone()
             .normalize()
-            .multiplyScalar(
-                distance
-            );
+            .multiplyScalar(distance);
+
+    const nextX =
+        player.position.x + move.x;
+
+    const nextZ =
+        player.position.z + move.z;
 
 
-    // ========================================================
-    // 普通に進めるか
-    // ========================================================
+    // ==========================================
+    // まず普通に移動できるか確認
+    // ==========================================
 
     const normalPosition =
         player.position.clone();
 
-
-    normalPosition.x +=
-        horizontal.x;
-
-    normalPosition.z +=
-        horizontal.z;
+    normalPosition.x = nextX;
+    normalPosition.z = nextZ;
 
 
-    // 普通に歩ける
-    if (
-        !collidesAt(
-            normalPosition
-        )
-    ) {
+    if (!collidesAt(normalPosition)) {
 
-        player.position.x =
-            normalPosition.x;
-
-        player.position.z =
-            normalPosition.z;
+        player.position.x = nextX;
+        player.position.z = nextZ;
 
         return;
     }
 
 
-    // ========================================================
-    // 空中では自動ジャンプしない
-    // ========================================================
+    // ==========================================
+    // 空中なら自動ジャンプしない
+    // ==========================================
 
-    if (
-        !grounded
-    ) {
-
+    if (!grounded) {
         return;
     }
 
 
-    // ========================================================
-    // 現在の地面
-    // ========================================================
+    // ==========================================
+    // 現在の足元の高さ
+    // ==========================================
 
     const currentGround =
         getBlockHeight(
@@ -1796,71 +1819,51 @@ function movePlayer(
         );
 
 
-    // ========================================================
-    // 移動先の地面
-    // ========================================================
+    // ==========================================
+    // 移動先の足元の高さ
+    // ==========================================
 
     const nextGround =
         getBlockHeight(
-            normalPosition.x,
-            normalPosition.z
+            nextX,
+            nextZ
         );
 
 
     const heightDifference =
-        nextGround -
-        currentGround;
+        nextGround - currentGround;
 
 
-    // ========================================================
-    // 本当に1ブロック以内の段差か
-    // ========================================================
+    // ==========================================
+    // 1マスの段差
+    // ==========================================
 
     if (
         heightDifference > 0.01 &&
-        heightDifference <= stepHeight + 0.01
+        heightDifference <= 1.01
     ) {
 
-        // 1マス上の位置
-        const stepPosition =
-            normalPosition.clone();
+        // 段差の上へ移動
+        player.position.x = nextX;
+        player.position.z = nextZ;
 
+        // 足元を段差の高さへ
+        player.position.y = nextGround;
 
-        stepPosition.y =
-            nextGround;
+        // 自動ジャンプ
+        velocityY = jumpPower;
 
+        grounded = false;
 
-        // 上がった場所に壁がない
-        if (
-            !collidesAt(
-                stepPosition
-            )
-        ) {
-
-            // ★ 自動ジャンプ
-            velocityY =
-                jumpPower;
-
-
-            grounded =
-                false;
-
-
-            player.position.x =
-                normalPosition.x;
-
-
-            player.position.z =
-                normalPosition.z;
-
-
-            return;
-        }
+        return;
     }
 
 
-    // 段差ではない
-    // → 壁として停止
+    // ==========================================
+    // 高すぎる壁
+    // ==========================================
+
+    return;
 }
 
 
@@ -1874,12 +1877,12 @@ let velocityY = 0;
 
 // 重力
 const gravity =
-    -0.018;
+    -0.028;
 
 
 // 通常ジャンプ
 const jumpPower =
-    0.34;
+    0.29;
 
 
 // 地面にいるか
@@ -2041,11 +2044,11 @@ function animate() {
 
     // 落下速度の上限
     if (
-        velocityY < -0.45
+        velocityY < -0.65
     ) {
 
         velocityY =
-            -0.45;
+            -0.65;
     }
 
 
@@ -2173,6 +2176,7 @@ window.addEventListener(
             window.innerWidth,
             window.innerHeight
         );
+
 
     }
 );
