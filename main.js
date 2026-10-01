@@ -1429,89 +1429,101 @@ function updateBreaking() {
 
 function placeBlock() {
 
-    const hit =
-        getTargetBlock();
+    const hit = getTargetBlock();
 
+    // ==========================================
+    // ブロックを狙っている場合
+    // ==========================================
 
-    if (
-        !hit
-    ) {
+    if (hit) {
+
+        const block = hit.object;
+
+        const normal = hit.face.normal;
+
+        const x =
+            block.userData.blockX +
+            Math.round(normal.x);
+
+        const y =
+            block.userData.blockY +
+            Math.round(normal.y);
+
+        const z =
+            block.userData.blockZ +
+            Math.round(normal.z);
+
+        tryPlaceBlock(x, y, z);
 
         return;
     }
 
 
-    const block =
-        hit.object;
-
-
-    const normal =
-        hit.face.normal;
-
+    // ==========================================
+    // 何も狙っていない場合
+    // → プレイヤーの真下に置く
+    // ==========================================
 
     const x =
-        block.userData.blockX +
-        Math.round(normal.x);
-
-
-    const y =
-        block.userData.blockY +
-        Math.round(normal.y);
-
+        Math.floor(player.position.x);
 
     const z =
-        block.userData.blockZ +
-        Math.round(normal.z);
+        Math.floor(player.position.z);
 
 
-    // プレイヤーと重なるか
-    const playerBox =
-        new THREE.Box3();
-
-
-    playerBox.setFromCenterAndSize(
-
-        new THREE.Vector3(
+    const ground =
+        getBlockHeight(
             player.position.x,
-            player.position.y +
-                playerHeight / 2,
             player.position.z
-        ),
-
-        new THREE.Vector3(
-            0.6,
-            playerHeight,
-            0.6
-        )
-    );
-
-
-    const blockBox =
-        new THREE.Box3(
-
-            new THREE.Vector3(
-                x - 0.5,
-                y - 0.5,
-                z - 0.5
-            ),
-
-            new THREE.Vector3(
-                x + 0.5,
-                y + 0.5,
-                z + 0.5
-            )
         );
 
 
+    if (ground <= -100) {
+        return;
+    }
+
+
+    // 現在立っているブロックの上に置く
+    const y =
+        Math.floor(ground);
+
+
+    tryPlaceBlock(
+        x,
+        y,
+        z
+    );
+}
+
+
+// ==================================================
+// 実際にブロックを置く
+// ==================================================
+
+function tryPlaceBlock(
+    x,
+    y,
+    z
+) {
+
+    // すでにブロックがある
     if (
-        playerBox.intersectsBox(
-            blockBox
+        blocks.has(
+            blockKey(
+                x,
+                y,
+                z
+            )
         )
     ) {
 
         return;
     }
 
+
+    // ==========================================
+    // ブロックを作る
+    // ==========================================
 
     createBlock(
         x,
@@ -1580,27 +1592,14 @@ renderer.domElement.addEventListener(
 // GROUND HEIGHT
 // ============================================================
 
-function getBlockHeight(
-    x,
-    z
-) {
+function getBlockHeight(x, z) {
 
-    const bx =
-        Math.floor(x);
+    const bx = Math.floor(x);
+    const bz = Math.floor(z);
 
-    const bz =
-        Math.floor(z);
+    let highest = -100;
 
-
-    let highest =
-        -100;
-
-
-    for (
-        let y = -3;
-        y < 20;
-        y++
-    ) {
+    for (let y = -3; y < 100; y++) {
 
         if (
             blocks.has(
@@ -1612,14 +1611,14 @@ function getBlockHeight(
             )
         ) {
 
-            highest =
-                Math.max(
-                    highest,
-                    y + 0.5
-                );
+            // ブロックの上面
+            const top = y + 0.5;
+
+            if (top > highest) {
+                highest = top;
+            }
         }
     }
-
 
     return highest;
 }
@@ -1893,11 +1892,20 @@ let grounded = false;
 // GAME LOOP
 // ============================================================
 
+const clock =
+    new THREE.Clock();
+
 function animate() {
 
     requestAnimationFrame(
         animate
     );
+
+    const delta =
+        Math.min(
+            clock.getDelta(),
+            0.05
+        );
 
 
     // ========================================================
@@ -1912,7 +1920,7 @@ function animate() {
     // ========================================================
 
     let speed =
-        0.16;
+    5.0 * delta;
 
 
     // Shiftで走る
@@ -1921,7 +1929,7 @@ function animate() {
     ) {
 
         speed =
-            0.28;
+            8.0 * delta;
     }
 
 
@@ -2039,7 +2047,7 @@ function animate() {
     // ========================================================
 
     velocityY +=
-        gravity;
+        gravity*delta*60;
 
 
     // 落下速度の上限
@@ -2052,22 +2060,32 @@ function animate() {
     }
 
 
-    const nextY =
-        player.position.y +
-        velocityY;
+   // ========================================================
+// 重力・地面判定
+// ========================================================
+
+const nextY =
+      player.position.y +
+    velocityY * delta * 60;
 
 
-    // ========================================================
-    // 地面
-    // ========================================================
-
-    const groundHeight =
-        getBlockHeight(
-            player.position.x,
-            player.position.z
-        );
+// プレイヤーの足元の地面
+const groundHeight =
+    getBlockHeight(
+        player.position.x,
+        player.position.z
+    );
 
 
+// ========================================================
+// 落下中
+// ========================================================
+
+if (
+    velocityY <= 0
+) {
+
+    // ブロックの上面に到達した
     if (
         nextY <= groundHeight
     ) {
@@ -2075,10 +2093,8 @@ function animate() {
         player.position.y =
             groundHeight;
 
-
         velocityY =
             0;
-
 
         grounded =
             true;
@@ -2090,10 +2106,24 @@ function animate() {
         player.position.y =
             nextY;
 
-
         grounded =
             false;
     }
+}
+
+
+// ========================================================
+// 上昇中
+// ========================================================
+
+else {
+
+    player.position.y =
+        nextY;
+
+    grounded =
+        false;
+}
 
 
     // ========================================================
