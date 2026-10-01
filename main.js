@@ -2,9 +2,9 @@ import * as THREE from
     "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
 
-// ==================================================
+// ============================================================
 // SCENE
-// ==================================================
+// ============================================================
 
 const scene = new THREE.Scene();
 
@@ -12,23 +12,22 @@ scene.background =
     new THREE.Color(0x87ceeb);
 
 
-// ==================================================
+// ============================================================
 // CAMERA
-// ==================================================
+// ============================================================
 
 const camera =
     new THREE.PerspectiveCamera(
         70,
-        window.innerWidth /
-        window.innerHeight,
+        window.innerWidth / window.innerHeight,
         0.05,
         500
     );
 
 
-// ==================================================
+// ============================================================
 // RENDERER
-// ==================================================
+// ============================================================
 
 const renderer =
     new THREE.WebGLRenderer({
@@ -41,16 +40,12 @@ renderer.setSize(
 );
 
 renderer.setPixelRatio(
-    Math.min(
-        window.devicePixelRatio,
-        2
-    )
+    Math.min(window.devicePixelRatio, 2)
 );
 
 
-// ★ 影を有効化
+// 影
 renderer.shadowMap.enabled = true;
-
 renderer.shadowMap.type =
     THREE.PCFSoftShadowMap;
 
@@ -60,9 +55,9 @@ document.body.appendChild(
 );
 
 
-// ==================================================
+// ============================================================
 // LIGHT
-// ==================================================
+// ============================================================
 
 const ambientLight =
     new THREE.AmbientLight(
@@ -70,14 +65,8 @@ const ambientLight =
         0.65
     );
 
-scene.add(
-    ambientLight
-);
+scene.add(ambientLight);
 
-
-// --------------------------------------------------
-// 太陽
-// --------------------------------------------------
 
 const sun =
     new THREE.DirectionalLight(
@@ -85,53 +74,35 @@ const sun =
         2.0
     );
 
-
 sun.position.set(
     -30,
     50,
     -25
 );
 
-
 sun.castShadow = true;
 
 
 // 影の解像度
-sun.shadow.mapSize.width =
-    2048;
-
-sun.shadow.mapSize.height =
-    2048;
+sun.shadow.mapSize.width = 2048;
+sun.shadow.mapSize.height = 2048;
 
 
-// 影が届く範囲
-sun.shadow.camera.left =
-    -50;
+// 影の範囲
+sun.shadow.camera.left = -50;
+sun.shadow.camera.right = 50;
+sun.shadow.camera.top = 50;
+sun.shadow.camera.bottom = -50;
 
-sun.shadow.camera.right =
-    50;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 150;
 
-sun.shadow.camera.top =
-    50;
-
-sun.shadow.camera.bottom =
-    -50;
-
-sun.shadow.camera.near =
-    1;
-
-sun.shadow.camera.far =
-    150;
+scene.add(sun);
 
 
-scene.add(
-    sun
-);
-
-
-// ==================================================
-// TEXTURE
-// ==================================================
+// ============================================================
+// 64×64 PIXEL TEXTURE
+// ============================================================
 
 function createPixelTexture(
     baseColor,
@@ -150,8 +121,8 @@ function createPixelTexture(
         canvas.getContext("2d");
 
 
-    ctx.fillStyle =
-        baseColor;
+    // 基本色
+    ctx.fillStyle = baseColor;
 
     ctx.fillRect(
         0,
@@ -161,6 +132,7 @@ function createPixelTexture(
     );
 
 
+    // ピクセル模様
     for (
         let i = 0;
         i < noiseAmount;
@@ -196,7 +168,6 @@ function createPixelTexture(
             size,
             size
         );
-
     }
 
 
@@ -206,24 +177,25 @@ function createPixelTexture(
         );
 
 
+    // ピクセルをぼかさない
     texture.magFilter =
         THREE.NearestFilter;
 
     texture.minFilter =
         THREE.NearestFilter;
 
+
     texture.colorSpace =
         THREE.SRGBColorSpace;
 
 
     return texture;
-
 }
 
 
-// ==================================================
+// ============================================================
 // GRASS TOP
-// ==================================================
+// ============================================================
 
 const grassTopTexture =
     createPixelTexture(
@@ -234,9 +206,9 @@ const grassTopTexture =
     );
 
 
-// ==================================================
+// ============================================================
 // GRASS SIDE
-// ==================================================
+// ============================================================
 
 function createGrassSideTexture() {
 
@@ -292,7 +264,6 @@ function createGrassSideTexture() {
             1,
             1
         );
-
     }
 
 
@@ -327,7 +298,6 @@ function createGrassSideTexture() {
             2,
             h
         );
-
     }
 
 
@@ -348,7 +318,6 @@ function createGrassSideTexture() {
 
 
     return texture;
-
 }
 
 
@@ -356,9 +325,9 @@ const grassSideTexture =
     createGrassSideTexture();
 
 
-// ==================================================
+// ============================================================
 // DIRT
-// ==================================================
+// ============================================================
 
 const dirtTexture =
     createPixelTexture(
@@ -369,9 +338,9 @@ const dirtTexture =
     );
 
 
-// ==================================================
+// ============================================================
 // STONE
-// ==================================================
+// ============================================================
 
 const stoneTexture =
     createPixelTexture(
@@ -382,9 +351,9 @@ const stoneTexture =
     );
 
 
-// ==================================================
+// ============================================================
 // MATERIAL
-// ==================================================
+// ============================================================
 
 const grassTopMaterial =
     new THREE.MeshLambertMaterial({
@@ -410,9 +379,9 @@ const stoneMaterial =
     });
 
 
-// ==================================================
+// ============================================================
 // BLOCK
-// ==================================================
+// ============================================================
 
 const blockGeometry =
     new THREE.BoxGeometry(
@@ -433,13 +402,12 @@ function blockKey(
 ) {
 
     return `${x},${y},${z}`;
-
 }
 
 
-// ==================================================
+// ============================================================
 // CREATE BLOCK
-// ==================================================
+// ============================================================
 
 function createBlock(
     x,
@@ -456,18 +424,19 @@ function createBlock(
         );
 
 
+    // すでに存在するなら作らない
     if (
         blocks.has(key)
     ) {
 
         return;
-
     }
 
 
     let materials;
 
 
+    // 草
     if (
         type === "grass"
     ) {
@@ -476,41 +445,49 @@ function createBlock(
 
             grassSideMaterial,
             grassSideMaterial,
+
             grassTopMaterial,
+
             dirtMaterial,
+
             grassSideMaterial,
             grassSideMaterial
 
         ];
-
     }
 
+
+    // 土
     else if (
         type === "dirt"
     ) {
 
         materials = [
+
             dirtMaterial,
             dirtMaterial,
             dirtMaterial,
             dirtMaterial,
             dirtMaterial,
             dirtMaterial
-        ];
 
+        ];
     }
 
+
+    // 石
     else {
 
         materials = [
+
             stoneMaterial,
             stoneMaterial,
             stoneMaterial,
             stoneMaterial,
             stoneMaterial,
             stoneMaterial
-        ];
 
+        ];
     }
 
 
@@ -528,13 +505,12 @@ function createBlock(
     );
 
 
-    // ★ ブロック自身が影を作る
+    // 影
     block.castShadow = true;
-
-    // ★ ブロック自身が影を受ける
     block.receiveShadow = true;
 
 
+    // ブロック情報
     block.userData = {
 
         blockX: x,
@@ -546,22 +522,18 @@ function createBlock(
     };
 
 
-    scene.add(
-        block
-    );
-
+    scene.add(block);
 
     blocks.set(
         key,
         block
     );
-
 }
 
 
-// ==================================================
+// ============================================================
 // REMOVE BLOCK
-// ==================================================
+// ============================================================
 
 function removeBlock(
     x,
@@ -586,25 +558,18 @@ function removeBlock(
     ) {
 
         return;
-
     }
 
 
-    scene.remove(
-        block
-    );
+    scene.remove(block);
 
-
-    blocks.delete(
-        key
-    );
-
+    blocks.delete(key);
 }
 
 
-// ==================================================
+// ============================================================
 // WORLD
-// ==================================================
+// ============================================================
 
 const worldSize = 24;
 
@@ -628,6 +593,7 @@ for (
             );
 
 
+        // 地下
         for (
             let y = -3;
             y < height;
@@ -640,25 +606,23 @@ for (
                 z,
                 "dirt"
             );
-
         }
 
 
+        // 草
         createBlock(
             x,
             height,
             z,
             "grass"
         );
-
     }
-
 }
 
 
-// ==================================================
-// STONE
-// ==================================================
+// ============================================================
+// STONE STRUCTURE
+// ============================================================
 
 createBlock(
     5,
@@ -689,43 +653,30 @@ createBlock(
 );
 
 
-// ==================================================
+// ============================================================
 // PLAYER
-// ==================================================
+// ============================================================
 
 const player =
     new THREE.Group();
 
 
-// 足元
+// プレイヤーの位置
 player.position.set(
     0,
     1,
     5
 );
 
-scene.add(
-    player
-);
+scene.add(player);
 
 
-// ==================================================
+// ============================================================
 // PLAYER MODEL
-// ==================================================
+// ============================================================
 //
-// ★ プレイヤーは存在するが完全に非表示
-//
-// 当たり判定・位置・カメラの基準としては存在する。
-// 画面には一切表示しない。
-// ==================================================
-
-const bodyGeometry =
-    new THREE.BoxGeometry(
-        0.55,
-        0.9,
-        0.35
-    );
-
+// プレイヤーは存在するが画面には表示しない。
+// ============================================================
 
 const playerMaterial =
     new THREE.MeshLambertMaterial({
@@ -735,66 +686,52 @@ const playerMaterial =
 
 const body =
     new THREE.Mesh(
-        bodyGeometry,
+        new THREE.BoxGeometry(
+            0.55,
+            0.9,
+            0.35
+        ),
         playerMaterial
     );
 
+body.position.y = 0.45;
 
-body.position.y =
-    0.45;
-
-
-// ★ 非表示
+// 非表示
 body.visible = false;
 
-
-player.add(
-    body
-);
-
-
-const headGeometry =
-    new THREE.BoxGeometry(
-        0.55,
-        0.55,
-        0.55
-    );
+player.add(body);
 
 
 const head =
     new THREE.Mesh(
-        headGeometry,
+        new THREE.BoxGeometry(
+            0.55,
+            0.55,
+            0.55
+        ),
         playerMaterial
     );
 
+head.position.y = 1.175;
 
-head.position.y =
-    1.175;
-
-
-// ★ 非表示
+// 非表示
 head.visible = false;
 
-
-player.add(
-    head
-);
+player.add(head);
 
 
-// ==================================================
+// ============================================================
 // PLAYER SIZE
-// ==================================================
+// ============================================================
 
-const playerRadius =
-    0.30;
+const playerRadius = 0.30;
 
-const playerHeight =
-    1.8;
+const playerHeight = 1.8;
 
 
-// ==================================================
+// ============================================================
 // KEYBOARD
-// ==================================================
+// ============================================================
 
 const keys = {};
 
@@ -822,13 +759,13 @@ document.addEventListener(
         ) {
 
             event.preventDefault();
-
         }
 
 
         keys[key] = true;
 
 
+        // 草
         if (
             key === "1"
         ) {
@@ -837,10 +774,10 @@ document.addEventListener(
                 "grass";
 
             updateBlockUI();
-
         }
 
 
+        // 土
         if (
             key === "2"
         ) {
@@ -849,10 +786,10 @@ document.addEventListener(
                 "dirt";
 
             updateBlockUI();
-
         }
 
 
+        // 石
         if (
             key === "3"
         ) {
@@ -861,9 +798,7 @@ document.addEventListener(
                 "stone";
 
             updateBlockUI();
-
         }
-
     }
 );
 
@@ -880,51 +815,41 @@ document.addEventListener(
 );
 
 
-// ==================================================
+// ============================================================
 // BLOCK SELECT
-// ==================================================
+// ============================================================
 
 let selectedBlock =
     "grass";
 
 
-// ==================================================
+// ============================================================
 // CROSSHAIR
-// ==================================================
+// ============================================================
 
 const crosshair =
     document.createElement(
         "div"
     );
 
+crosshair.textContent = "＋";
 
-crosshair.textContent =
-    "＋";
+crosshair.style.position = "fixed";
 
+crosshair.style.left = "50%";
 
-crosshair.style.position =
-    "fixed";
-
-crosshair.style.left =
-    "50%";
-
-crosshair.style.top =
-    "50%";
+crosshair.style.top = "50%";
 
 crosshair.style.transform =
     "translate(-50%, -50%)";
 
-crosshair.style.color =
-    "white";
+crosshair.style.color = "white";
 
-crosshair.style.fontSize =
-    "20px";
+crosshair.style.fontSize = "20px";
 
-crosshair.style.fontFamily =
-    "Arial";
+crosshair.style.fontFamily = "Arial";
 
-crosshair.style.fontWeight =
-    "bold";
+crosshair.style.fontWeight = "bold";
 
 crosshair.style.textShadow =
     "0 0 2px black";
@@ -932,8 +857,7 @@ crosshair.style.textShadow =
 crosshair.style.pointerEvents =
     "none";
 
-crosshair.style.zIndex =
-    "100";
+crosshair.style.zIndex = "100";
 
 
 document.body.appendChild(
@@ -941,9 +865,9 @@ document.body.appendChild(
 );
 
 
-// ==================================================
+// ============================================================
 // BLOCK UI
-// ==================================================
+// ============================================================
 
 const blockUI =
     document.createElement(
@@ -995,25 +919,22 @@ function updateBlockUI() {
 updateBlockUI();
 
 
-// ==================================================
+// ============================================================
 // CAMERA
-// ==================================================
+// ============================================================
 
-let cameraYaw =
-    0;
+let cameraYaw = 0;
 
-
-let cameraPitch =
-    0;
+let cameraPitch = 0;
 
 
-const cameraHeight =
-    1.62;
+// 目線
+const cameraHeight = 1.62;
 
 
-// ==================================================
+// ============================================================
 // MOUSE LOOK
-// ==================================================
+// ============================================================
 
 renderer.domElement.addEventListener(
     "click",
@@ -1036,7 +957,6 @@ document.addEventListener(
         ) {
 
             return;
-
         }
 
 
@@ -1067,14 +987,13 @@ document.addEventListener(
                     cameraPitch
                 )
             );
-
     }
 );
 
 
-// ==================================================
+// ============================================================
 // RAYCAST
-// ==================================================
+// ============================================================
 
 const raycaster =
     new THREE.Raycaster();
@@ -1112,20 +1031,240 @@ function getTargetBlock() {
     ) {
 
         return null;
-
     }
 
 
     return hits[0];
-
 }
 
 
-// ==================================================
-// BREAK
-// ==================================================
+// ============================================================
+// BLOCK BREAKING
+// ============================================================
 
-function breakBlock() {
+const BREAK_TIME =
+    3000;
+
+
+let breakingBlock = null;
+
+let breakingStartTime = 0;
+
+
+// ============================================================
+// CRACK EFFECT
+// ============================================================
+
+const crackMaterial =
+    new THREE.LineBasicMaterial({
+        color: 0x111111,
+        transparent: true,
+        opacity: 0.8
+    });
+
+
+const crackGroup =
+    new THREE.Group();
+
+
+scene.add(crackGroup);
+
+
+const crackLines = [];
+
+
+function createCrackLines() {
+
+    while (
+        crackGroup.children.length > 0
+    ) {
+
+        crackGroup.remove(
+            crackGroup.children[0]
+        );
+    }
+
+
+    crackLines.length = 0;
+
+
+    // ひびパターン
+    const patterns = [
+
+        [
+            [-0.35, 0.15],
+            [-0.05, 0.02],
+            [0.15, 0.25],
+            [0.38, 0.05]
+        ],
+
+        [
+            [-0.25, -0.25],
+            [-0.05, 0.02],
+            [0.05, -0.30],
+            [0.30, -0.10]
+        ],
+
+        [
+            [-0.40, 0.30],
+            [-0.15, 0.05],
+            [-0.30, -0.20]
+        ],
+
+        [
+            [0.05, 0.05],
+            [0.30, 0.30],
+            [0.38, 0.15]
+        ]
+    ];
+
+
+    for (
+        const pattern of patterns
+    ) {
+
+        const points = [];
+
+
+        for (
+            const p of pattern
+        ) {
+
+            points.push(
+                new THREE.Vector3(
+                    p[0],
+                    p[1],
+                    0
+                )
+            );
+        }
+
+
+        const geometry =
+            new THREE.BufferGeometry()
+                .setFromPoints(
+                    points
+                );
+
+
+        const line =
+            new THREE.Line(
+                geometry,
+                crackMaterial
+            );
+
+
+        crackGroup.add(line);
+
+        crackLines.push(line);
+    }
+}
+
+
+createCrackLines();
+
+
+// ============================================================
+// CRACK UPDATE
+// ============================================================
+
+function updateCrack(
+    progress,
+    block,
+    face
+) {
+
+    crackGroup.position.copy(
+        block.position
+    );
+
+
+    // --------------------------------------------------------
+    // ブロックの面に合わせる
+    // --------------------------------------------------------
+
+    crackGroup.quaternion.set(
+        0,
+        0,
+        0,
+        1
+    );
+
+
+    // 上
+    if (
+        face &&
+        Math.abs(face.y) > 0.5
+    ) {
+
+        crackGroup.rotation.x =
+            face.y > 0
+                ? -Math.PI / 2
+                : Math.PI / 2;
+    }
+
+
+    // 左右
+    else if (
+        face &&
+        Math.abs(face.x) > 0.5
+    ) {
+
+        crackGroup.rotation.y =
+            face.x > 0
+                ? Math.PI / 2
+                : -Math.PI / 2;
+    }
+
+
+    // 前後
+    else {
+
+        crackGroup.rotation.set(
+            0,
+            0,
+            0
+        );
+    }
+
+
+    // 表面から少しだけ離す
+    crackGroup.translateZ(
+        0.506
+    );
+
+
+    // ひびの濃さ
+    crackMaterial.opacity =
+        0.15 +
+        progress * 0.75;
+
+
+    // ひびの本数
+    const visibleCount =
+        Math.ceil(
+            crackLines.length *
+            progress
+        );
+
+
+    for (
+        let i = 0;
+        i < crackLines.length;
+        i++
+    ) {
+
+        crackLines[i].visible =
+            i < visibleCount;
+    }
+}
+
+
+// ============================================================
+// START BREAKING
+// ============================================================
+
+function startBreaking() {
 
     const hit =
         getTargetBlock();
@@ -1136,7 +1275,6 @@ function breakBlock() {
     ) {
 
         return;
-
     }
 
 
@@ -1144,39 +1282,150 @@ function breakBlock() {
         hit.object;
 
 
-    const x =
-        block.userData.blockX;
-
-
-    const y =
-        block.userData.blockY;
-
-
-    const z =
-        block.userData.blockZ;
-
-
+    // 最下層
     if (
-        y <= -3
+        block.userData.blockY <= -3
     ) {
 
         return;
-
     }
 
 
-    removeBlock(
-        x,
-        y,
-        z
-    );
+    // 新しいブロック
+    if (
+        breakingBlock !== block
+    ) {
 
+        breakingBlock =
+            block;
+
+        breakingStartTime =
+            performance.now();
+    }
 }
 
 
-// ==================================================
-// PLACE
-// ==================================================
+// ============================================================
+// STOP BREAKING
+// ============================================================
+
+function stopBreaking() {
+
+    breakingBlock =
+        null;
+
+    breakingStartTime =
+        0;
+
+    crackGroup.visible =
+        false;
+}
+
+
+// ============================================================
+// UPDATE BREAKING
+// ============================================================
+
+function updateBreaking() {
+
+    if (
+        !breakingBlock
+    ) {
+
+        return;
+    }
+
+
+    // ブロックが消えている
+    if (
+        !breakingBlock.parent
+    ) {
+
+        stopBreaking();
+
+        return;
+    }
+
+
+    // 現在狙っているブロック
+    const hit =
+        getTargetBlock();
+
+
+    // 狙いを外した
+    if (
+        !hit ||
+        hit.object !== breakingBlock
+    ) {
+
+        stopBreaking();
+
+        return;
+    }
+
+
+    const elapsed =
+        performance.now() -
+        breakingStartTime;
+
+
+    const progress =
+        Math.min(
+            elapsed / BREAK_TIME,
+            1
+        );
+
+
+    // ひび表示
+    crackGroup.visible =
+        true;
+
+
+    updateCrack(
+        progress,
+        breakingBlock,
+        hit.face.normal
+    );
+
+
+    // 3秒
+    if (
+        progress >= 1
+    ) {
+
+        const x =
+            breakingBlock
+                .userData
+                .blockX;
+
+
+        const y =
+            breakingBlock
+                .userData
+                .blockY;
+
+
+        const z =
+            breakingBlock
+                .userData
+                .blockZ;
+
+
+        removeBlock(
+            x,
+            y,
+            z
+        );
+
+
+        stopBreaking();
+    }
+}
+
+
+// ============================================================
+// PLACE BLOCK
+// ============================================================
 
 function placeBlock() {
 
@@ -1189,7 +1438,6 @@ function placeBlock() {
     ) {
 
         return;
-
     }
 
 
@@ -1216,17 +1464,20 @@ function placeBlock() {
         Math.round(normal.z);
 
 
+    // プレイヤーと重なるか
     const playerBox =
         new THREE.Box3();
 
 
     playerBox.setFromCenterAndSize(
+
         new THREE.Vector3(
             player.position.x,
             player.position.y +
-            playerHeight / 2,
+                playerHeight / 2,
             player.position.z
         ),
+
         new THREE.Vector3(
             0.6,
             playerHeight,
@@ -1237,11 +1488,13 @@ function placeBlock() {
 
     const blockBox =
         new THREE.Box3(
+
             new THREE.Vector3(
                 x - 0.5,
                 y - 0.5,
                 z - 0.5
             ),
+
             new THREE.Vector3(
                 x + 0.5,
                 y + 0.5,
@@ -1257,7 +1510,6 @@ function placeBlock() {
     ) {
 
         return;
-
     }
 
 
@@ -1267,39 +1519,53 @@ function placeBlock() {
         z,
         selectedBlock
     );
-
 }
 
 
-// ==================================================
+// ============================================================
 // MOUSE
-// ==================================================
+// ============================================================
 
 renderer.domElement.addEventListener(
     "mousedown",
+    event => {
+
+        // 左クリック
+        if (
+            event.button === 0
+        ) {
+
+            startBreaking();
+        }
+
+
+        // 右クリック
+        if (
+            event.button === 2
+        ) {
+
+            placeBlock();
+        }
+    }
+);
+
+
+// 左クリックを離す
+renderer.domElement.addEventListener(
+    "mouseup",
     event => {
 
         if (
             event.button === 0
         ) {
 
-            breakBlock();
-
+            stopBreaking();
         }
-
-
-        if (
-            event.button === 2
-        ) {
-
-            placeBlock();
-
-        }
-
     }
 );
 
 
+// 右クリックメニュー禁止
 renderer.domElement.addEventListener(
     "contextmenu",
     event => {
@@ -1310,17 +1576,14 @@ renderer.domElement.addEventListener(
 );
 
 
-// ==================================================
-// COLLISION
-// ==================================================
+// ============================================================
+// GROUND HEIGHT
+// ============================================================
 
 function getBlockHeight(
     x,
     z
 ) {
-
-    // プレイヤーの足元から見て
-    // 下にある一番高いブロックを探す
 
     const bx =
         Math.floor(x);
@@ -1349,26 +1612,22 @@ function getBlockHeight(
             )
         ) {
 
-            // ブロック上面
             highest =
                 Math.max(
                     highest,
                     y + 0.5
                 );
-
         }
-
     }
 
 
     return highest;
-
 }
 
 
-// ==================================================
-// SOLID COLLISION
-// ==================================================
+// ============================================================
+// COLLISION
+// ============================================================
 
 function collidesAt(
     position
@@ -1444,54 +1703,65 @@ function collidesAt(
                 ) {
 
                     return true;
-
                 }
-
             }
-
         }
-
     }
 
 
     return false;
-
 }
 
 
-// ==================================================
-// STEP UP
-// ==================================================
+// ============================================================
+// PLAYER MOVEMENT
+// ============================================================
 //
-// Minecraft風の「自動ジャンプ」。
-// 前に1ブロック程度の段差があれば
-// 自動的に上へ乗る。
-// ==================================================
+// 重要：
+// 「何かにぶつかった」だけではジャンプしない。
+// 前方の地面が現在の地面より
+// 0〜1ブロック高い場合だけ自動ジャンプ。
+// ============================================================
 
 const stepHeight =
-    1.05;
+    1.0;
 
 
-function movePlayer(direction, distance) {
+function movePlayer(
+    direction,
+    distance
+) {
 
     const horizontal =
         direction
             .clone()
             .normalize()
-            .multiplyScalar(distance);
+            .multiplyScalar(
+                distance
+            );
 
-    // ==============================================
-    // 普通に移動できるか確認
-    // ==============================================
+
+    // ========================================================
+    // 普通に進めるか
+    // ========================================================
 
     const normalPosition =
         player.position.clone();
 
-    normalPosition.x += horizontal.x;
-    normalPosition.z += horizontal.z;
 
-    // 普通に進めるならそのまま進む
-    if (!collidesAt(normalPosition)) {
+    normalPosition.x +=
+        horizontal.x;
+
+    normalPosition.z +=
+        horizontal.z;
+
+
+    // 普通に歩ける
+    if (
+        !collidesAt(
+            normalPosition
+        )
+    ) {
 
         player.position.x =
             normalPosition.x;
@@ -1503,125 +1773,21 @@ function movePlayer(direction, distance) {
     }
 
 
-    // ==============================================
-    // 段差にぶつかった
-    // ==============================================
-
+    // ========================================================
     // 空中では自動ジャンプしない
-    if (!grounded) {
-        return;
-    }
+    // ========================================================
 
-
-    // ==============================================
-    // 1マス上にジャンプできるか確認
-    // ==============================================
-
-    const jumpPosition =
-        player.position.clone();
-
-    jumpPosition.x += horizontal.x;
-    jumpPosition.z += horizontal.z;
-
-    // 1ブロック分だけ上げる
-    jumpPosition.y += 1.0;
-
-
-    // 上に上がった場所に障害物がない
-    // → 1マスの段差と判断
-    if (!collidesAt(jumpPosition)) {
-
-        // ★ 自動ジャンプ開始
-        velocityY = jumpPower;
-
-        grounded = false;
-
-        // 少しだけ前へ進む
-        player.position.x =
-            jumpPosition.x;
-
-        player.position.z =
-            jumpPosition.z;
-
-        return;
-    }
-}
-
-// ==================================================
-// PHYSICS
-// ==================================================
-
-// Minecraftに近い感覚にするため
-// 前より落下をゆっくりにする。
-
-let velocityY =
-    0;
-
-
-// 以前 -0.025
-// 今回 -0.018
-const gravity =
-    -0.018;
-
-
-// 以前 0.42
-// 今回 0.34
-const jumpPower =
-    0.34;
-
-
-let grounded =
-    false;
-
-
-// ==================================================
-// GAME LOOP
-// ==================================================
-
-function movePlayer(direction, distance) {
-
-    const horizontal =
-        direction
-            .clone()
-            .normalize()
-            .multiplyScalar(distance);
-
-
-    // ==========================================
-    // ① 普通に前へ進めるか
-    // ==========================================
-
-    const normalPosition =
-        player.position.clone();
-
-    normalPosition.x += horizontal.x;
-    normalPosition.z += horizontal.z;
-
-
-    if (!collidesAt(normalPosition)) {
-
-        player.position.x =
-            normalPosition.x;
-
-        player.position.z =
-            normalPosition.z;
+    if (
+        !grounded
+    ) {
 
         return;
     }
 
 
-    // ==========================================
-    // ② 空中では自動ジャンプしない
-    // ==========================================
-
-    if (!grounded) {
-        return;
-    }
-
-
-    // ==========================================
-    // ③ 前方の地面の高さを調べる
-    // ==========================================
+    // ========================================================
+    // 現在の地面
+    // ========================================================
 
     const currentGround =
         getBlockHeight(
@@ -1630,6 +1796,10 @@ function movePlayer(direction, distance) {
         );
 
 
+    // ========================================================
+    // 移動先の地面
+    // ========================================================
+
     const nextGround =
         getBlockHeight(
             normalPosition.x,
@@ -1637,38 +1807,40 @@ function movePlayer(direction, distance) {
         );
 
 
-    // ==========================================
-    // ④ 本当に段差があるか確認
-    // ==========================================
-
     const heightDifference =
-        nextGround - currentGround;
+        nextGround -
+        currentGround;
 
 
-    // 1ブロック程度の上り坂・段差だけ
+    // ========================================================
+    // 本当に1ブロック以内の段差か
+    // ========================================================
+
     if (
         heightDifference > 0.01 &&
-        heightDifference <= 1.01
+        heightDifference <= stepHeight + 0.01
     ) {
 
-        // ======================================
-        // ⑤ 1マス上に移動できるか確認
-        // ======================================
-
+        // 1マス上の位置
         const stepPosition =
             normalPosition.clone();
+
 
         stepPosition.y =
             nextGround;
 
 
+        // 上がった場所に壁がない
         if (
-            !collidesAt(stepPosition)
+            !collidesAt(
+                stepPosition
+            )
         ) {
 
-            // ★ ここで初めて自動ジャンプ
+            // ★ 自動ジャンプ
             velocityY =
                 jumpPower;
+
 
             grounded =
                 false;
@@ -1677,33 +1849,313 @@ function movePlayer(direction, distance) {
             player.position.x =
                 normalPosition.x;
 
+
             player.position.z =
                 normalPosition.z;
+
 
             return;
         }
     }
 
 
-    // ==========================================
-    // ⑥ 段差ではない
-    // → ただの壁として止まる
-    // ==========================================
-
-    return;
+    // 段差ではない
+    // → 壁として停止
 }
 
 
-// ==================================================
+// ============================================================
+// PHYSICS
+// ============================================================
+
+// 上下速度
+let velocityY = 0;
+
+
+// 重力
+const gravity =
+    -0.018;
+
+
+// 通常ジャンプ
+const jumpPower =
+    0.34;
+
+
+// 地面にいるか
+let grounded = false;
+
+
+// ============================================================
+// GAME LOOP
+// ============================================================
+
+function animate() {
+
+    requestAnimationFrame(
+        animate
+    );
+
+
+    // ========================================================
+    // 採掘
+    // ========================================================
+
+    updateBreaking();
+
+
+    // ========================================================
+    // 移動速度
+    // ========================================================
+
+    let speed =
+        0.16;
+
+
+    // Shiftで走る
+    if (
+        keys["shift"]
+    ) {
+
+        speed =
+            0.28;
+    }
+
+
+    // ========================================================
+    // カメラの前方向
+    // ========================================================
+
+    const forward =
+        new THREE.Vector3(
+
+            Math.sin(cameraYaw),
+
+            0,
+
+            Math.cos(cameraYaw)
+
+        );
+
+
+    // ========================================================
+    // カメラの右方向
+    // ========================================================
+
+    const right =
+        new THREE.Vector3(
+
+            -forward.z,
+
+            0,
+
+            forward.x
+
+        );
+
+
+    // ========================================================
+    // W
+    // ========================================================
+
+    if (
+        keys["w"]
+    ) {
+
+        movePlayer(
+            forward,
+            speed
+        );
+    }
+
+
+    // ========================================================
+    // S
+    // ========================================================
+
+    if (
+        keys["s"]
+    ) {
+
+        movePlayer(
+            forward,
+            -speed
+        );
+    }
+
+
+    // ========================================================
+    // A
+    // ========================================================
+
+    if (
+        keys["a"]
+    ) {
+
+        movePlayer(
+            right,
+            -speed
+        );
+    }
+
+
+    // ========================================================
+    // D
+    // ========================================================
+
+    if (
+        keys["d"]
+    ) {
+
+        movePlayer(
+            right,
+            speed
+        );
+    }
+
+
+    // ========================================================
+    // 通常ジャンプ
+    // ========================================================
+
+    if (
+        keys[" "] &&
+        grounded
+    ) {
+
+        velocityY =
+            jumpPower;
+
+        grounded =
+            false;
+    }
+
+
+    // ========================================================
+    // 重力
+    // ========================================================
+
+    velocityY +=
+        gravity;
+
+
+    // 落下速度の上限
+    if (
+        velocityY < -0.45
+    ) {
+
+        velocityY =
+            -0.45;
+    }
+
+
+    const nextY =
+        player.position.y +
+        velocityY;
+
+
+    // ========================================================
+    // 地面
+    // ========================================================
+
+    const groundHeight =
+        getBlockHeight(
+            player.position.x,
+            player.position.z
+        );
+
+
+    if (
+        nextY <= groundHeight
+    ) {
+
+        player.position.y =
+            groundHeight;
+
+
+        velocityY =
+            0;
+
+
+        grounded =
+            true;
+
+    }
+
+    else {
+
+        player.position.y =
+            nextY;
+
+
+        grounded =
+            false;
+    }
+
+
+    // ========================================================
+    // CAMERA
+    // ========================================================
+
+    camera.position.set(
+
+        player.position.x,
+
+        player.position.y +
+            cameraHeight,
+
+        player.position.z
+
+    );
+
+
+    const lookDirection =
+        new THREE.Vector3(
+
+            Math.sin(cameraYaw) *
+                Math.cos(cameraPitch),
+
+            Math.sin(cameraPitch),
+
+            Math.cos(cameraYaw) *
+                Math.cos(cameraPitch)
+
+        );
+
+
+    camera.lookAt(
+
+        camera.position
+            .clone()
+            .add(
+                lookDirection
+                    .multiplyScalar(10)
+            )
+
+    );
+
+
+    // ========================================================
+    // RENDER
+    // ========================================================
+
+    renderer.render(
+        scene,
+        camera
+    );
+}
+
+
+// ============================================================
 // START
-// ==================================================
+// ============================================================
 
 animate();
 
 
-// ==================================================
+// ============================================================
 // RESIZE
-// ==================================================
+// ============================================================
 
 window.addEventListener(
     "resize",
